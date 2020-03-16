@@ -1,0 +1,219 @@
+---
+title: "User Guide for SOLEA"
+author: "E.N. Armelloni, F. Masnadi"
+date: "16/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+set.seed(42)
+setwd("~/CNR/SOS/github/SOLEA") 
+surv_data<-"Relative" ## Absolute if KM, relative if not
+n_scenarios<-as.numeric(4)
+censor<-as.numeric(120)
+tree_best<-as.numeric(500)
+try_best<-as.numeric(2)
+filename<-"Input_data.csv"
+```
+
+\
+<div style="text-align: justify"> 
+This is an user guide accompaining __Masnadi F, Armelloni E N, Guicciardi S, Pellini G, Raicevich S, Mazzoldi C, Scanu M, Sabatini L, Tassetti A N, Ferrà C, Grati F, Bolognini L, Domenichetti F, Cacciamani R, Calì F, Polidori P, Fabi G, Luzi F, Giovanardi O, Bernarello V, Pasanisi E, Franceschini G, Breggion C, Bozzetta B, Sambo A, Prioli G, Gugnali A, Piccioni E, Fiori F, Caruso F, Scarcella G "Survival scenarios for undersized common sole (*Solea solea* L.) caught from a beam trawl fishery in the Mediterranean Sea"__ and serve to facilitate the use of SOLEA: Survial toOL on a scEnario bAsis. 
+\
+\
+The tool aid the interpretation of fishing dicard survival data by the mean of a scenario approach.
+\
+Starting from Vitality assessment onboard, fishing conditions parameters and delayed survival experiment, the tool will individuate the main mortality drivers occurring within the reference fishery and use them to define scenarios on which overall survival is calculated.</div>
+\
+\
+
+# Installation
+\
+<div style="text-align: justify"> 
+Download Input data and R code from [here](https://github.com/EnricoNArmelloni/SOLEA) by selecting the green square "clone or download" and store them in a unique folder. 
+\
+\
+To run the tool open Data_analysis.R and jump to lines 23-29 to set some basic inut parameters. 
+\
+1) setwd: path to folder where data and code are stored must be written within the brackets. Alternatively, the wd might be set by click ctr+shift+h and navigate to the right folder
+\
+2) surv_data: here write what kind of analysis you prefere to perform. Taping "Relative" will analyze delayed survival data with Cox Relative Hazard model and give overall survival in potential terms. Absolute will use the Kaplan-Meier model to assess delayed mortality and will give overall survival in absolute terms
+\
+3) n_scenarios: write here how many scenarios you want to display. Note that a large number of scenarios (>4) require large amount of data (rule of thumb: n scenarios = n individuals assessed/400)
+\
+4) censor: set duration of captive experiment (hours)
+\
+5) tree_best and try_best are developer parameter. Not touch
+\
+6) filename: write here input file name
+\
+```{r, echo=TRUE, include=TRUE}
+setwd("~/CNR/SOS/github/SOLEA") 
+surv_data<-"Relative" ## Absolute if KM, relative if not
+n_scenarios<-as.numeric(4)
+censor<-as.numeric(120)
+tree_best<-as.numeric(500)
+try_best<-as.numeric(2)
+filename<-"Input_data.csv"
+```
+\
+\
+You will need several packages, these should be installed automatically when you run the code for the first time. If R still alerts you of a missing package, install it through the Tools option in RStudio. </div>
+\
+```{r, echo=TRUE, include=TRUE}
+list.of.packages <- c("tidyverse", "caret","rpart","rpart.plot","e1071","randomForest","survival","survminer","data.table","Boruta")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+```
+\
+\
+
+## Data required
+<div style="text-align: justify"> 
+The tool require one data file in .csv format ("Input_data.csv"). The data file need that within each row there are details of a single specimen assessed.
+\
+
+### Survival data:
+1) Vitality_class: vitality category assessed onboard
+2) status: onboard immediate mortality assessment, 0 for death during sorting, 1 for alive during sorting
+3) Survivability_days: period within the specimen remained alive in captivity (number of days). If the specimen were not assessed for delayed mortlaity, fill with NA
+\
+
+### Fishing condition data
+Include each variable important for your fishery. If need to use categories, prefers letters to numbers
+\
+</div>
+
+```{r, echo=FALSE, include=FALSE}
+# Load Packages
+library(tidyverse); library(caret);library(rpart);library(rpart.plot);library("e1071");library(randomForest);library(survival);library(survminer);library(data.table);library(Boruta)
+dir.create(file.path(".", paste0("Plots & Graphs", surv_data)))
+plotdir <- (paste0("./Plots & Graphs", surv_data, "/"))
+source("support_functions.R") # source external functions
+Data <- import(filename)
+```
+```{r, echo=TRUE}
+print(summary(Data))
+```
+\
+\
+
+# Core functions 
+\
+From now on the user do not need to modify the code, except *where it is explicited in the present document*. It is suggested to run it line by line.
+
+### Variables exploration 1: collinearity analysis
+\
+<div style="text-align: justify"> 
+After setting right input parameters, run the code until line 53
+\
+```{r, echo=TRUE}
+Collinearity(Data)
+```
+\
+The subfolder "Plot&Figures" is automatically created. There is now stored the .png coplot, indicating collinearity between variables. If any value exceed 0.7, you might decide to exclude one of the variables from following steps. *This must be performed manually: by typing "-" followed by the variable name within brackets (Towning speed in the example). If more variables need to be removed, separe them by a comma (e.g.: -Variable1, -Variable2, -Variable3)*.
+\
+```{r, include=TRUE}
+Data<-Data %>% dplyr::select(-Towing_speed)
+```
+\
+\
+
+### Variables exploration 2: Explore meaningfulness of remaining variables with Boruta model
+\
+This is an automated procedure that analyze the importance of remaining variables and exclude the meaningless.
+\
+```{r, include=FALSE}
+BS<-Boruta_screen(Data); print(BS)
+```
+```{r, include=TRUE, echo=FALSE}
+print(BS)
+```
+\
+\
+
+### Random Forest (RF) model to identify the stressors affecting immediate survival
+\
+The RF algorithm is performed on selected features. OOB estimates will give the error rate calculated on the confusion matrix
+\
+```{r, echo=FALSE}
+remove<-dplyr::pull(BS %>%dplyr::filter(value!="Confirmed")%>%dplyr::select(name))
+Data<-Data%>%dplyr::select(-remove)
+rf<-RF_screen(Data)
+imp <- randomForest::importance(rf)
+impvar<- rownames(imp)
+db <- Data %>% dplyr::select(-Survivability_days, -Vitality_class)
+```
+\
+\
+
+### Partial dependence plot to inspect marginal effect of selected variables
+\
+This is an additional analysis built on RF model. The analysis is automatically performed on all variables included in the analysis and the figured is saved in .tiff format in the "Figures&Plots" subfolder.
+On Y axis there is the Center Log Odds ratio, which represents the likelihood of variable on X axis to reduce immediate survival.
+\
+```{r, echo=FALSE}
+op<-par(mfrow=c(2, 3))
+for (j in seq_along(rownames(imp))) {
+  partialPlot(rf, as.data.frame(db), rownames(imp)[j], xlab=rownames(imp)[j],ylab ="Centered Log Odds of Dead",main=paste("Partial Dependence on", rownames(imp)[j]))
+}
+par(op)
+```
+\
+\
+
+### Classification Tree (CT) to split the dataset into "fishing scenarios"
+\
+This step will divide the dataset in fishing scenarios. The numbers within the boxes are number of live specimens (right) and dead specimens (left) at the moment of sampling within the node. 0 or 1 indicate the prevalence of dead or alive specimens within the node.
+\
+```{r, echo=FALSE}
+tree.rpart<-CT_create(Data)
+rpart.plot(tree.rpart, type = 2, extra = 1)
+```
+\
+\
+
+### Delayed survival assessment
+\
+```{r, echo=FALSE, include=FALSE}
+Scenario_0<-Data %>% dplyr::mutate(scen_set = "Aggregate")
+Scenario<-Data %>%dplyr::mutate(scen_set = as.character(tree.rpart[["where"]])) %>%bind_rows(., Scenario_0)
+Scenario_list<-split(Scenario,Scenario$scen_set)
+```
+This step is performed in coherence to what specified in the input parameters. The relationship between vitality class and delayed survival is assessed within the scenarios. In the case of *Absolute* survival it is performed a Kaplan-Meier model
+\
+```{r, echo=FALSE, include=FALSE}
+surv_data="Absolute"
+SI_list <- lapply(Scenario_list, SI_calculation)
+if(surv_data=="Absolute")
+  {
+  Surv_list<-lapply(Scenario_list, KM_model)
+  }else{
+  Surv_list<-lapply(Scenario_list, Cox_model)
+  
+  }
+
+```
+
+
+## 
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ote that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
