@@ -595,15 +595,16 @@ In the case of <strong>Relative</strong> survival it is performed a Cox Proporti
 <li><strong>Overall Survival calculation</strong></li>
 </ul>
 <div style="text-align: justify">
-The last step combine information on immediate mortality with delayed survival for the highlighted scenarios. The output diplayed is composed by three table per scenario. The first table gives the SI results, the secondo will give the weighted SD results and the thirs table is the Overall survival with confidence limit.
+The last step combine information on immediate mortality with delayed survival for the highlighted scenarios. The output diplayed is composed by three table per scenario. The first table gives the IS results, the second will give the weighted delayed survival results and the thirs table is the Overall survival (OS) with confidence limit.
 </div>
 <p><br />
 </p>
-<pre><code>## # A tibble: 1 x 3
-## # Groups:   Indicator [1]
-##   Indicator Percentage Scenar
-##   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; 
-## 1 1              0.221 3     
+<pre><code>## [1] &quot;Scenario : 3&quot;
+## # A tibble: 1 x 3
+## # Groups:   IS [1]
+##   IS    Percentage Scenar
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt; 
+## 1 1          0.221 3     
 ## # A tibble: 3 x 3
 ##   Indicator Percentage Scenar
 ##   &lt;fct&gt;          &lt;dbl&gt; &lt;chr&gt; 
@@ -611,14 +612,15 @@ The last step combine information on immediate mortality with delayed survival f
 ## 2 B              0.258 3     
 ## 3 C              0.454 3     
 ## # A tibble: 1 x 4
-##      SR upper_ci low_ci Scenario
+##      OS upper_ci low_ci Scenario
 ##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;   
 ## 1 0.105    0.133 0.0860 3       
+## [1] &quot;Scenario : 4&quot;
 ## # A tibble: 1 x 3
-## # Groups:   Indicator [1]
-##   Indicator Percentage Scenar
-##   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; 
-## 1 1              0.546 4     
+## # Groups:   IS [1]
+##   IS    Percentage Scenar
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt; 
+## 1 1          0.546 4     
 ## # A tibble: 3 x 3
 ##   Indicator Percentage Scenar
 ##   &lt;fct&gt;          &lt;dbl&gt; &lt;chr&gt; 
@@ -626,14 +628,15 @@ The last step combine information on immediate mortality with delayed survival f
 ## 2 B              0.446 4     
 ## 3 C              0.356 4     
 ## # A tibble: 1 x 4
-##      SR upper_ci low_ci Scenario
+##      OS upper_ci low_ci Scenario
 ##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;   
 ## 1 0.274    0.334  0.233 4       
+## [1] &quot;Scenario : 6&quot;
 ## # A tibble: 1 x 3
-## # Groups:   Indicator [1]
-##   Indicator Percentage Scenar
-##   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; 
-## 1 1              0.437 6     
+## # Groups:   IS [1]
+##   IS    Percentage Scenar
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt; 
+## 1 1          0.437 6     
 ## # A tibble: 3 x 3
 ##   Indicator Percentage Scenar
 ##   &lt;fct&gt;          &lt;dbl&gt; &lt;chr&gt; 
@@ -641,14 +644,15 @@ The last step combine information on immediate mortality with delayed survival f
 ## 2 B              0.326 6     
 ## 3 C              0.539 6     
 ## # A tibble: 1 x 4
-##      SR upper_ci low_ci Scenario
+##      OS upper_ci low_ci Scenario
 ##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;   
 ## 1 0.198    0.198  0.198 6       
+## [1] &quot;Scenario : 7&quot;
 ## # A tibble: 1 x 3
-## # Groups:   Indicator [1]
-##   Indicator Percentage Scenar
-##   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; 
-## 1 1              0.716 7     
+## # Groups:   IS [1]
+##   IS    Percentage Scenar
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt; 
+## 1 1          0.716 7     
 ## # A tibble: 3 x 3
 ##   Indicator Percentage Scenar
 ##   &lt;fct&gt;          &lt;dbl&gt; &lt;chr&gt; 
@@ -656,14 +660,15 @@ The last step combine information on immediate mortality with delayed survival f
 ## 2 B              0.390 7     
 ## 3 C              0.428 7     
 ## # A tibble: 1 x 4
-##      SR upper_ci low_ci Scenario
+##      OS upper_ci low_ci Scenario
 ##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;   
 ## 1 0.334    0.431  0.274 7       
+## [1] &quot;Scenario : Aggregate&quot;
 ## # A tibble: 1 x 3
-## # Groups:   Indicator [1]
-##   Indicator Percentage Scenar   
-##   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;    
-## 1 1              0.419 Aggregate
+## # Groups:   IS [1]
+##   IS    Percentage Scenar   
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt;    
+## 1 1          0.419 Aggregate
 ## # A tibble: 3 x 3
 ##   Indicator Percentage Scenar   
 ##   &lt;fct&gt;          &lt;dbl&gt; &lt;chr&gt;    
@@ -671,7 +676,7 @@ The last step combine information on immediate mortality with delayed survival f
 ## 2 B              0.353 Aggregate
 ## 3 C              0.445 Aggregate
 ## # A tibble: 1 x 4
-##      SR upper_ci low_ci Scenario 
+##      OS upper_ci low_ci Scenario 
 ##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;    
 ## 1 0.229    0.269  0.195 Aggregate</code></pre>
 </div>
