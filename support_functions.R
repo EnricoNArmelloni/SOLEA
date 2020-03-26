@@ -93,7 +93,7 @@ CT_create<-function(i){
   return(tree.rpart)
 }
 
-SI_calculation<- function(i){
+IS_calculation<- function(i){
   name<-as.character(unique(i$scen_set))
   plot_scenario<-i%>% dplyr::count(Vitality_class) %>%dplyr::mutate(Percentage= n/(sum(n))) %>%dplyr::mutate(Scenar=rep(name,nrow(.)))
   return(plot_scenario)
@@ -109,7 +109,7 @@ Cox_model<-function(i){
   f<-summary(modsel)#;print(modsel)
   ci<-f$conf.int
   ci<-as.tibble(ci) %>% dplyr::mutate(Indicator=str_remove(rownames(ci), "Vitality_class"))%>%dplyr::rename(ul='upper .95', ll='lower .95')%>%dplyr::mutate(ul=1/ul, ll=1/ll)%>%dplyr::select(Indicator, ll,ul)
-  p_value<-f$coefficients ## significatività
+  p_value<-f$coefficients ## significativit?
   p_value<-as.tibble(p_value) %>%dplyr::rename("sign" = `Pr(>|z|)`, "se"='se(coef)') %>% dplyr::mutate(Indicator=str_remove(rownames(p_value), "Vitality_class"), sign=ifelse(sign >= 0.05, "ns", "s"))%>%dplyr::inner_join(., ci, by="Indicator") %>%dplyr::select(Indicator,sign, coef,se, ul, ll) 
   plot_cox<-ggforest(modsel, data = i, main = "Hazard ratio",   cpositions = c(0.02, 0.22, 0.4), fontsize = 0.7, refLabel = "reference", noDigits = 2)
   ggsave(paste0(name, ".tiff"), plot_cox,path = plotdir )
@@ -143,11 +143,13 @@ KM_model<-function(i){
     return(values)
 }
 
-SR<-function(i,j){
-  ##### SI
+OS<-function(i,j){
+  ##### IS
   name<-as.character(unique(i$Scenar))
-  SI<-i %>% dplyr::mutate(Indicator= ifelse(Vitality_class== "Dead","0","1"))%>% dplyr::group_by(Indicator)%>%dplyr::mutate(Percentage= sum(Percentage))%>%dplyr::distinct(Indicator, Percentage,.keep_all=T) %>%dplyr::select(-n, -Vitality_class) %>%dplyr::select(Indicator, Percentage, Scenar)%>%dplyr::filter(Indicator ==1)
-  print(SI)
+  print(paste0("Scenario : ", name))
+  IS<-i %>% dplyr::mutate(Indicator= ifelse(Vitality_class== "Dead","0","1"))%>% dplyr::group_by(Indicator)%>%dplyr::mutate(Percentage= sum(Percentage))%>%dplyr::distinct(Indicator, Percentage,.keep_all=T) %>%dplyr::select(-n, -Vitality_class) %>%dplyr::select(Indicator, Percentage, Scenar)%>%dplyr::filter(Indicator ==1)
+  tbIS<-IS %>%dplyr::rename("IS" = "Indicator")
+  print(tbIS)
   
   ##### SD
   # weights
@@ -187,7 +189,7 @@ SR<-function(i,j){
     
     qq<-rep(0,10000)
     for(k in 1:10000){
-      qq[k]<-SI$Percentage *    ((as.numeric(SD_weights[1,2])* (rnorm(1,as.numeric(coef_a),as.numeric(se_a))))+
+      qq[k]<-IS$Percentage *    ((as.numeric(SD_weights[1,2])* (rnorm(1,as.numeric(coef_a),as.numeric(se_a))))+
                                    (as.numeric(SD_weights[2,2])*(rnorm(1,as.numeric(coef_b),as.numeric(se_b))))+
                                    (as.numeric(SD_weights[3,2])*(rnorm(1,as.numeric(coef_c),as.numeric(se_c)))))
     }
@@ -211,7 +213,7 @@ SR<-function(i,j){
   
   qq<-rep(0,10000)
   for(k in 1:10000){
-    qq[k]<-SI$Percentage *    ((as.numeric(SD_weights[1,2])* 1)+
+    qq[k]<-IS$Percentage *    ((as.numeric(SD_weights[1,2])* 1)+
                               (as.numeric(SD_weights[2,2])*(1/(exp(rnorm(1,as.numeric(coef_b),as.numeric(se_b))))))+
                               (as.numeric(SD_weights[3,2])*(1/(exp(rnorm(1,as.numeric(coef_c),as.numeric(se_c)))))))
   }
@@ -219,18 +221,18 @@ SR<-function(i,j){
   }
   
   
-  SR_mean<-as.numeric(mean(qq))
-  SR_CI<-as.numeric(quantile(qq, c(0.05, 0.95)))
-  SR<-tibble(SR = SR_mean, upper_ci = SR_CI[2], low_ci=SR_CI[1], Scenario = name)
-  print(SR)
-  return(SR)
+  OS_mean<-as.numeric(mean(qq))
+  OS_CI<-as.numeric(quantile(qq, c(0.05, 0.95)))
+  OS<-tibble(OS = OS_mean, upper_ci = OS_CI[2], low_ci=OS_CI[1], Scenario = name)
+  print(OS)
+  return(OS)
 }
 
-SR_propagazione<-function(i,j){
-  ##### SI
+OS_propagazione<-function(i,j){
+  ##### IS
   name<-as.character(unique(i$Scenar))
-  SI<-i %>% dplyr::mutate(Indicator= ifelse(Vitality_class== "Dead","0","1"))%>% dplyr::group_by(Indicator)%>%dplyr::mutate(Percentage= sum(Percentage))%>%dplyr::distinct(Indicator, Percentage,.keep_all=T) %>%dplyr::select(-n, -Vitality_class) %>%dplyr::select(Indicator, Percentage, Scenar)%>%dplyr::filter(Indicator ==1)
-  print(SI)
+  IS<-i %>% dplyr::mutate(Indicator= ifelse(Vitality_class== "Dead","0","1"))%>% dplyr::group_by(Indicator)%>%dplyr::mutate(Percentage= sum(Percentage))%>%dplyr::distinct(Indicator, Percentage,.keep_all=T) %>%dplyr::select(-n, -Vitality_class) %>%dplyr::select(Indicator, Percentage, Scenar)%>%dplyr::filter(Indicator ==1)
+  print(IS)
   
   ##### SD
   # weights
@@ -284,15 +286,15 @@ SR_propagazione<-function(i,j){
     # calcolo propagazione degli errori  #
     ######################################
     
-    var <- c("si", "wa", "sa", "wb", "sb", "wc", "sc") # variabili
+    var <- c("IS", "wa", "sa", "wb", "sb", "wc", "sc") # variabili
     dd <- vector(mode = "list", length = length(var)) # creazione lista
     vv <- rep(0, length(var)) # per i valori eval()
     for (i in 1:length(var)) {
-      dd[[i]] <- D(expression(si*(sa*wa + sb*wb + sc*wc)), var[i]) # calcolo derivate della funzione expression() 
-      si <- SI$Percentage; wa <- as.numeric(SD_weights[1,2]); sa <- coef_a; wb <-as.numeric(SD_weights[2,2]); sb <- coef_b; wc <- as.numeric(SD_weights[3,2]); sc <- coef_c; # valori medi variabili
+      dd[[i]] <- D(expression(IS*(sa*wa + sb*wb + sc*wc)), var[i]) # calcolo derivate della funzione expression() 
+      IS <- IS$Percentage; wa <- as.numeric(SD_weights[1,2]); sa <- coef_a; wb <-as.numeric(SD_weights[2,2]); sb <- coef_b; wc <- as.numeric(SD_weights[3,2]); sc <- coef_c; # valori medi variabili
       vv[i] <- eval(dd[[i]]) # valutazione numerica delle derivate
       err <- c(0, 0, (ul_a - ll_a)/2, 0, (ul_b - ll_b)/2, 0, (ul_c - ll_c)/2) # errori variabili, nello stesso ordine delle variabili
-      med <- eval(expression(si*(sa*wa + sb*wb + sc*wc))) # valore medio della funzione
+      med <- eval(expression(IS*(sa*wa + sb*wb + sc*wc))) # valore medio della funzione
       xx <- sqrt(t(vv^2)%*%err^2) # percentuale errore medio della funzione
     }
     
@@ -323,15 +325,15 @@ SR_propagazione<-function(i,j){
       ll_c<-1
     }
     
-    var <- c("si", "wa", "sa", "wb", "sb", "wc", "sc") # variabili
+    var <- c("IS", "wa", "sa", "wb", "sb", "wc", "sc") # variabili
     dd <- vector(mode = "list", length = length(var)) # creazione lista
     vv <- rep(0, length(var)) # per i valori eval()
     for (i in 1:length(var)) {
-      dd[[i]] <- D(expression(si*(sa*wa + sb*wb + sc*wc)), var[i]) # calcolo derivate della funzione expression() 
-      si <- SI$Percentage; wa <- (as.numeric(SD_weights[1,2])); sa <- 1; wb <-(as.numeric(SD_weights[2,2])); sb <- exp(-coef_b); wc <- as.numeric(SD_weights[3,2]); sc <- exp(-coef_c); # valori medi variabili
+      dd[[i]] <- D(expression(IS*(sa*wa + sb*wb + sc*wc)), var[i]) # calcolo derivate della funzione expression() 
+      IS <- IS$Percentage; wa <- (as.numeric(SD_weights[1,2])); sa <- 1; wb <-(as.numeric(SD_weights[2,2])); sb <- exp(-coef_b); wc <- as.numeric(SD_weights[3,2]); sc <- exp(-coef_c); # valori medi variabili
       vv[i] <- eval(dd[[i]]) # valutazione numerica delle derivate
       err <- c(0, 0, 0, 0, (ul_b - ll_b)/2, 0, (ul_c - ll_c)/2) # errori variabili, nello stesso ordine delle variabili
-      med <- eval(expression(si*(sa*wa + sb*wb + sc*wc))) # valore medio della funzione
+      med <- eval(expression(IS*(sa*wa + sb*wb + sc*wc))) # valore medio della funzione
       xx <- sqrt(t(vv^2)%*%err^2) # percentuale errore medio della funzione
     }
     
@@ -339,10 +341,10 @@ SR_propagazione<-function(i,j){
   }
   
   
-  SR_mean<-as.numeric(med)
-  SR<-tibble(SR = SR_mean, upper_ci = as.numeric(med)+xx[[1]], low_ci=as.numeric(med)-xx[[1]], Scenario = name)
-  print(SR)
-  return(SR)
+  OS_mean<-as.numeric(med)
+  OS<-tibble(OS = OS_mean, upper_ci = as.numeric(med)+xx[[1]], low_ci=as.numeric(med)-xx[[1]], Scenario = name)
+  print(OS)
+  return(OS)
 }
 
 
