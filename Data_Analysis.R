@@ -92,15 +92,21 @@ Scenario_0<-Data %>% dplyr::mutate(scen_set = "Aggregate")
 Scenario<-Data %>%dplyr::mutate(scen_set = as.character(tree.rpart[["where"]])) %>%bind_rows(., Scenario_0)
 Scenario_list<-split(Scenario,Scenario$scen_set)
 
-#   SI by scenario
-SI_list <- lapply(Scenario_list, SI_calculation)
+#   IS by scenario
+IS_list <- lapply(Scenario_list, IS_calculation)
 if(surv_data=="Absolute")
   {
   Surv_list<-lapply(Scenario_list, KM_model)
+  
   }else{
   Surv_list<-lapply(Scenario_list, Cox_model)
   
-}
+  }
+
+lapply(Surv_list, function(i)
+{
+  print(tibble(i),  row.names=F)
+})
 #   SR by Scenario
 
 
@@ -109,8 +115,8 @@ if(surv_data=="Absolute")
 #  Final result
 #
 ############## 
-Final_result<-mapply(SR,SI_list,Surv_list)
-
+Final_result<-mapply(OS,IS_list,Surv_list)
+write.csv(Final_result, "OS.csv")
 
 ##############
 #
@@ -118,8 +124,8 @@ Final_result<-mapply(SR,SI_list,Surv_list)
 #
 ############## 
 
-# plot SI histogram
-plot_scenarios<-bind_rows(SI_list) #%>%dplyr::mutate(Scenar= factor(Scenar, levels=titles))
+# plot IS histogram
+plot_scenarios<-bind_rows(IS_list) #%>%dplyr::mutate(Scenar= factor(Scenar, levels=titles))
 Vitplot<-ggplot(plot_scenarios, aes(fill=Vitality_class, y=Percentage, x=Scenar ,color=Vitality_class)) +  geom_bar( stat="identity",position="fill")+fill_palette(palette = c("green4", "blue", "red", "grey"))+color_palette(palette = c("black", "black", "black", "black")) +   
   theme(  text=element_text(family="Tahoma") ,legend.text = element_text(size = 8),legend.title = element_blank(),axis.title.x = element_blank(),axis.title.y = element_text( size = 7),
           axis.text.x=element_text(colour="black", size = 8, angle = 90),
@@ -131,6 +137,6 @@ plot_SR<-as.data.frame(t(as.data.frame(Final_result)))%>%dplyr::rename("Scenar"=
 
 colrs<-c("red" = "red", "green" = "green", "#999999" = "#999999")
 
-SO_PLOT<-ggplot(data=plot_SR, aes(x=as.character(Scenar), y=as.numeric(SR)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("SO")+xlab("Scenario")+ggtitle(paste0(surv_data, " SO among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
+OS_PLOT<-ggplot(data=plot_SR, aes(x=as.character(Scenar), y=as.numeric(SR)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("OS")+xlab("Scenario")+ggtitle(paste0(surv_data, " OS among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
 
-ggsave("SO_PLOT.tiff", SO_PLOT,path = plotdir )
+ggsave("OS_PLOT.tiff", OS_PLOT,path = plotdir )
