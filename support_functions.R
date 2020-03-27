@@ -57,9 +57,9 @@ RF_screen<-function(i){
   
   # parameters selection
   rf_ranges <- list(ntree = c(500, 1000, 1500, 2000), mtry = 2:5) 
-  #rf_tune <- tune(randomForest, as.factor(status) ~ ., data = db, ranges = rf_ranges)
-  #tree_best<-as.numeric(rf_tune$best.parameters[1])
-  #try_best<-as.numeric(rf_tune$best.parameters[2])
+  rf_tune <- tune(randomForest, as.factor(status) ~ ., data = db, ranges = rf_ranges)
+  tree_best<-as.numeric(rf_tune$best.parameters[1])
+  try_best<-as.numeric(rf_tune$best.parameters[2])
   
   # run the model
   rf <- randomForest(status ~ ., data = db, importance = TRUE, ntree = tree_best, mtry = try_best)
@@ -119,9 +119,13 @@ Cox_model<-function(i){
 KM_model<-function(i){
   i<-i  %>% na.omit(.) 
   name<-as.character(unique(i$scen_set))
-  i$Vitality_class<-as.factor(i$Vitality_class)
+  i$Vitality_class<-factor(i$Vitality_class, levels = c("A", "B", "C"))
   i<-i%>%dplyr::mutate(Survivability_hours= Survivability_days*24) %>%dplyr::mutate(cens=ifelse(Survivability_hours< censor, 1,0))
   Model<-survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i);print(Model)
+  tiff(paste0(plotdir,"KM plot", name,".tif"),width = 85, height = 85, units = "mm", res = 1200, pointsize = 5)
+  plot(survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i),main=name, xlab = "Time in hours", ylab = "Survival probability", col = seq(1:length(levels(i$Vitality_class))), lwd = 2, conf.int = F, xlim = c(0, censor))
+  legend("topright" , legend = levels(i$Vitality_class), col =seq(1:length(levels(i$Vitality_class))), lwd = 2)
+  dev.off()
   # Pairwise comparisons using Peto & Peto test (Peto & Peto, 1972)
   Post_Hoc_KM<-pairwise_survdiff(Surv(Survivability_hours, cens) ~ Vitality_class ,data =i, rho = 1);print(Post_Hoc_KM)
   confAB<-as.data.frame(Post_Hoc_KM$p.value)[1,1]
@@ -142,6 +146,7 @@ KM_model<-function(i){
   values<-tibble(Indicator= str_remove(z$strata, "Vitality_class="), time=z$time, coef=z$surv, se=z$std.err, ul=z$upper, ll=z$lower)%>%arrange(Indicator, desc(time))%>%distinct(Indicator,.keep_all=T)%>%dplyr::inner_join(., significance, by="Indicator")%>%dplyr::select(Indicator,sign, coef,se, ul, ll)
     return(values)
 }
+
 
 OS<-function(i,j){
   ##### IS
