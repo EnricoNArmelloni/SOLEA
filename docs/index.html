@@ -393,18 +393,15 @@ Starting from Vitality assessment onboard, fishing conditions parameters and del
 <p>To run the tool open Data_analysis.R and jump to lines 23-29 to set some basic input parameters.</p>
 <ol style="list-style-type: decimal">
 <li><p>setwd: path to folder where data and code are stored must be written within the brackets. Alternatively, the wd might be set by click ctr+shift+h and navigate to the right folder</p></li>
-<li><p>surv_data: here write what kind of analysis you prefere to perform. Taping “Relative” will analyze delayed survival data with Cox Relative Hazard model <span class="citation">(Therneau and Grambsch <a href="#ref-Therneau2000">2000</a>)</span> and give overall survival in potential terms. Absolute will use the Kaplan-Meier model <span class="citation">(Kaplan and Meier <a href="#ref-Kaplan1958">1958</a>)</span> to assess delayed mortality and will give overall survival in absolute terms</p></li>
-<li><p>n_scenarios: write here how many scenarios you want to display. Note that a large number of scenarios (&gt;4) require large amount of data (rule of thumb: n scenarios = n individuals assessed/400)</p></li>
+<li><p>surv_data: write here what kind of analysis you prefere to perform. Typing “Relative”, the script will analyze delayed survival data with Cox Relative Hazard model <span class="citation">(Therneau and Grambsch <a href="#ref-Therneau2000">2000</a>)</span> and return overall survival in potential terms. Typing “Absolute”, the script will use the Kaplan-Meier model <span class="citation">(Kaplan and Meier <a href="#ref-Kaplan1958">1958</a>)</span> to assess delayed mortality and will give overall survival in absolute terms.</p></li>
+<li><p>n_scenarios: write here how many scenarios you want to display. Note that a large number of scenarios (&gt;4) require large amount of data</p></li>
 <li><p>censor: set duration of captive experiment (hours)</p></li>
-<li><p>tree_best and try_best are developer parameter. Not touch</p></li>
 <li><p>filename: write here input file name</p></li>
 </ol>
 <pre class="r"><code>setwd(&quot;~/CNR/SOS/github/SOLEA&quot;) 
 surv_data&lt;-&quot;Relative&quot; ## Absolute if KM, relative if not
 n_scenarios&lt;-as.numeric(4)
 censor&lt;-as.numeric(120)
-tree_best&lt;-as.numeric(500)
-try_best&lt;-as.numeric(2)
 filename&lt;-&quot;Input_data.csv&quot;</code></pre>
 <br />
 You will need several packages, these should be installed automatically when you run the code for the first time. If R still alerts you of a missing package, install it through the Tools option in RStudio.
