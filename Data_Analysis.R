@@ -2,16 +2,11 @@
 #   SOLEA: Survial toOL on a scEnario bAsis
 #############################
 # Developed by Enrico Nicola Armelloni & Francesco Masnadi (CNR-IRBIM, Ancona)
-##############################
 #
-#
-# Include some brief explanation
-#
-#
+# email contact: enrico.armelloni@irbim.cnr.it
 ##############################
 rm(list=ls())
 set.seed(42)
-
 
 ##############
 #
@@ -24,8 +19,6 @@ setwd("~/CNR/SOS/github/SOLEA")
 surv_data<-"Relative" ## Absolute if KM, relative if not
 n_scenarios<-as.numeric(4)
 censor<-as.numeric(120)
-tree_best<-as.numeric(500)
-try_best<-as.numeric(2)
 filename<-"Input_data.csv"
 
 
@@ -43,7 +36,8 @@ dir.create(file.path(".", paste0("Plots & Graphs", surv_data)))
 plotdir <- (paste0("./Plots & Graphs", surv_data, "/"))
 source("support_functions.R") # source external functions
 Data <- import(filename)
-
+#tree_best<-as.numeric(500)
+#try_best<-as.numeric(2)
 ##############
 #
 # Variables exploration
@@ -94,8 +88,7 @@ Scenario_list<-split(Scenario,Scenario$scen_set)
 
 #   IS by scenario
 IS_list <- lapply(Scenario_list, IS_calculation)
-if(surv_data=="Absolute")
-  {
+if(surv_data=="Absolute"){
   Surv_list<-lapply(Scenario_list, KM_model)
   
   }else{
@@ -107,7 +100,7 @@ lapply(Surv_list, function(i)
 {
   print(tibble(i),  row.names=F)
 })
-#   SR by Scenario
+#   OS by Scenario
 
 
 ##############
@@ -132,11 +125,11 @@ Vitplot<-ggplot(plot_scenarios, aes(fill=Vitality_class, y=Percentage, x=Scenar 
           axis.text.y=element_text(colour="black", size = 8)) + ggtitle("Onboard Vitality Assessment")
 ggsave("ABCDproportion.tiff", Vitplot, path = plotdir)
 
-# plot SR histogram
-plot_SR<-as.data.frame(t(as.data.frame(Final_result)))%>%dplyr::rename("Scenar"="Scenario")%>%dplyr::mutate(Scen_x=as.numeric(seq(1:nrow(.))))%>%dplyr::mutate(SR=as.numeric(SR)) %>%dplyr::mutate(clr=ifelse(SR==max(SR), "green", ifelse(SR==min(SR), "red", "#999999")))
+# plot OS histogram
+plot_OS<-as.data.frame(t(as.data.frame(Final_result)))%>%dplyr::rename("Scenar"="Scenario")%>%dplyr::mutate(Scen_x=as.numeric(seq(1:nrow(.))))%>%dplyr::mutate(OS=as.numeric(OS)) %>%dplyr::mutate(clr=ifelse(OS==max(OS), "green", ifelse(OS==min(OS), "red", "#999999")))
 
 colrs<-c("red" = "red", "green" = "green", "#999999" = "#999999")
 
-OS_PLOT<-ggplot(data=plot_SR, aes(x=as.character(Scenar), y=as.numeric(SR)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("OS")+xlab("Scenario")+ggtitle(paste0(surv_data, " OS among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
+OS_PLOT<-ggplot(data=plot_OS, aes(x=as.character(Scenar), y=as.numeric(OS)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("OS")+xlab("Scenario")+ggtitle(paste0(surv_data, " OS among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
 
 ggsave("OS_PLOT.tiff", OS_PLOT,path = plotdir )
