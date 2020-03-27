@@ -90,22 +90,18 @@ Scenario_list<-split(Scenario,Scenario$scen_set)
 IS_list <- lapply(Scenario_list, IS_calculation)
 if(surv_data=="Absolute"){
   Surv_list<-lapply(Scenario_list, KM_model)
-  
   }else{
   Surv_list<-lapply(Scenario_list, Cox_model)
-  
   }
 
 lapply(Surv_list, function(i)
 {
   print(tibble(i),  row.names=F)
 })
-#   OS by Scenario
-
 
 ##############
 #
-#  Final result
+#  OS by Scenario
 #
 ############## 
 Final_result<-mapply(OS,IS_list,Surv_list)
