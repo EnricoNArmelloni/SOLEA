@@ -16,7 +16,7 @@ set.seed(42)
 
 ### The working directory must be the folder were the two codes and input data are stored. Please insert here the working directory, or press ctr+shift+h and navigate to the right folder
 setwd("~/CNR/SOS/github/SOLEA") 
-surv_data<-"Relative" ## Absolute if KM, relative if not
+surv_data<-"Relative" ## Option for future development. 
 n_scenarios<-as.numeric(4)
 censor<-as.numeric(120)
 filename<-"Input_data.csv"
@@ -101,11 +101,11 @@ lapply(Surv_list, function(i)
 
 ##############
 #
-#  OS by Scenario
+#  RS by Scenario
 #
 ############## 
-Final_result<-mapply(OS,IS_list,Surv_list)
-write.csv(Final_result, "OS.csv")
+Final_result<-mapply(RS,IS_list,Surv_list)
+write.csv(Final_result, "RS.csv")
 
 ##############
 #
@@ -121,11 +121,11 @@ Vitplot<-ggplot(plot_scenarios, aes(fill=Vitality_class, y=Percentage, x=Scenar 
           axis.text.y=element_text(colour="black", size = 8)) + ggtitle("Onboard Vitality Assessment")
 ggsave("ABCDproportion.tiff", Vitplot, path = plotdir)
 
-# plot OS histogram
-plot_OS<-as.data.frame(t(as.data.frame(Final_result)))%>%dplyr::rename("Scenar"="Scenario")%>%dplyr::mutate(Scen_x=as.numeric(seq(1:nrow(.))))%>%dplyr::mutate(OS=as.numeric(OS)) %>%dplyr::mutate(clr=ifelse(OS==max(OS), "green", ifelse(OS==min(OS), "red", "#999999")))
+# plot RS histogram
+plot_RS<-as.data.frame(t(as.data.frame(Final_result)))%>%dplyr::rename("Scenar"="Scenario")%>%dplyr::mutate(Scen_x=as.numeric(seq(1:nrow(.))))%>%dplyr::mutate(RS=as.numeric(RS)) %>%dplyr::mutate(clr=ifelse(RS==max(RS), "green", ifelse(RS==min(RS), "red", "#999999")))
 
 colrs<-c("red" = "red", "green" = "green", "#999999" = "#999999")
 
-OS_PLOT<-ggplot(data=plot_OS, aes(x=as.character(Scenar), y=as.numeric(OS)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("OS")+xlab("Scenario")+ggtitle(paste0(surv_data, " OS among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
+RS_PLOT<-ggplot(data=plot_RS, aes(x=as.character(Scenar), y=as.numeric(RS)))+geom_col(aes(fill=clr), show.legend = FALSE)+ geom_linerange(aes(ymin = as.numeric(low_ci), ymax = as.numeric(upper_ci)))+ylab("RS")+xlab("Scenario")+ggtitle(paste0(surv_data, " survival among Scenarios"))+theme_bw()+ scale_fill_manual(values=colrs)
 
-ggsave("OS_PLOT.tiff", OS_PLOT,path = plotdir )
+ggsave("RS_PLOT.tiff", RS_PLOT,path = plotdir )
