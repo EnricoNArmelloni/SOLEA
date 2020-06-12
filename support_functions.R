@@ -116,39 +116,10 @@ Cox_model<-function(i){
   return(p_value)
 }
 
-KM_model<-function(i){
-  i<-i  %>% na.omit(.) 
-  name<-as.character(unique(i$scen_set))
-  i$Vitality_class<-factor(i$Vitality_class, levels = c("A", "B", "C"))
-  i<-i%>%dplyr::mutate(Survivability_hours= Survivability_days*24) %>%dplyr::mutate(cens=ifelse(Survivability_hours< censor, 1,0))
-  Model<-survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i);print(Model)
-  tiff(paste0(plotdir,"KM plot", name,".tif"),width = 85, height = 85, units = "mm", res = 1200, pointsize = 5)
-  plot(survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i),main=name, xlab = "Time in hours", ylab = "Survival probability", col = seq(1:length(levels(i$Vitality_class))), lwd = 2, conf.int = F, xlim = c(0, censor))
-  legend("topright" , legend = levels(i$Vitality_class), col =seq(1:length(levels(i$Vitality_class))), lwd = 2)
-  dev.off()
-  # Pairwise comparisons using Peto & Peto test (Peto & Peto, 1972)
-  Post_Hoc_KM<-pairwise_survdiff(Surv(Survivability_hours, cens) ~ Vitality_class ,data =i, rho = 1);print(Post_Hoc_KM)
-  confAB<-as.data.frame(Post_Hoc_KM$p.value)[1,1]
-  confBC<-as.data.frame(Post_Hoc_KM$p.value)[2,2]
-  confAC<-as.data.frame(Post_Hoc_KM$p.value)[2,1]
-  significance<-tibble(Indicator=c("A", "B", "C"),sign=c("s",NA,NA))
-  if(confAB< 0.05){
-    significance[2,2]<-"s"
-  }else{
-    significance[2,2]<-"ns"
-  }
-  if(confBC< 0.05){
-    significance[3,2]<-"s"
-  } else {
-    significance[3,2]<-"ns"
-  }
-  z<-summary(Model)
-  values<-tibble(Indicator= str_remove(z$strata, "Vitality_class="), time=z$time, coef=z$surv, se=z$std.err, ul=z$upper, ll=z$lower)%>%arrange(Indicator, desc(time))%>%distinct(Indicator,.keep_all=T)%>%dplyr::inner_join(., significance, by="Indicator")%>%dplyr::select(Indicator,sign, coef,se, ul, ll)
-    return(values)
-}
 
 
-OS<-function(i,j){
+
+RS<-function(i,j){
   ##### IS
   name<-as.character(unique(i$Scenar))
   print(paste0("Scenario : ", name))
@@ -226,14 +197,16 @@ OS<-function(i,j){
   }
   
   
-  OS_mean<-as.numeric(mean(qq))
-  OS_CI<-as.numeric(quantile(qq, c(0.05, 0.95)))
-  OS<-tibble(OS = OS_mean, upper_ci = OS_CI[2], low_ci=OS_CI[1], Scenario = name)
-  print(OS)
-  return(OS)
+  RS_mean<-as.numeric(mean(qq))
+  RS_CI<-as.numeric(quantile(qq, c(0.05, 0.95)))
+  RS<-tibble(RS = RS_mean, upper_ci = RS_CI[2], low_ci=RS_CI[1], Scenario = name)
+  print(RS)
+  return(RS)
 }
 
-OS_propagazione<-function(i,j){
+
+### Alternative method to get confidence intervals based on error propagation technique
+RS_propagazione<-function(i,j){
   ##### IS
   name<-as.character(unique(i$Scenar))
   IS<-i %>% dplyr::mutate(Indicator= ifelse(Vitality_class== "Dead","0","1"))%>% dplyr::group_by(Indicator)%>%dplyr::mutate(Percentage= sum(Percentage))%>%dplyr::distinct(Indicator, Percentage,.keep_all=T) %>%dplyr::select(-n, -Vitality_class) %>%dplyr::select(Indicator, Percentage, Scenar)%>%dplyr::filter(Indicator ==1)
@@ -346,10 +319,40 @@ OS_propagazione<-function(i,j){
   }
   
   
-  OS_mean<-as.numeric(med)
-  OS<-tibble(OS = OS_mean, upper_ci = as.numeric(med)+xx[[1]], low_ci=as.numeric(med)-xx[[1]], Scenario = name)
-  print(OS)
-  return(OS)
+  RS_mean<-as.numeric(med)
+  RS<-tibble(RS = RS_mean, upper_ci = as.numeric(med)+xx[[1]], low_ci=as.numeric(med)-xx[[1]], Scenario = name)
+  print(RS)
+  return(RS)
 }
 
-
+### Future option: use KM model to estimate survival
+KM_model<-function(i){
+  i<-i  %>% na.omit(.) 
+  name<-as.character(unique(i$scen_set))
+  i$Vitality_class<-factor(i$Vitality_class, levels = c("A", "B", "C"))
+  i<-i%>%dplyr::mutate(Survivability_hours= Survivability_days*24) %>%dplyr::mutate(cens=ifelse(Survivability_hours< censor, 1,0))
+  Model<-survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i);print(Model)
+  tiff(paste0(plotdir,"KM plot", name,".tif"),width = 85, height = 85, units = "mm", res = 1200, pointsize = 5)
+  plot(survfit(Surv(i$Survivability_hours, i$cens) ~ Vitality_class, data = i),main=name, xlab = "Time in hours", ylab = "Survival probability", col = seq(1:length(levels(i$Vitality_class))), lwd = 2, conf.int = F, xlim = c(0, censor))
+  legend("topright" , legend = levels(i$Vitality_class), col =seq(1:length(levels(i$Vitality_class))), lwd = 2)
+  dev.off()
+  # Pairwise comparisons using Peto & Peto test (Peto & Peto, 1972)
+  Post_Hoc_KM<-pairwise_survdiff(Surv(Survivability_hours, cens) ~ Vitality_class ,data =i, rho = 1);print(Post_Hoc_KM)
+  confAB<-as.data.frame(Post_Hoc_KM$p.value)[1,1]
+  confBC<-as.data.frame(Post_Hoc_KM$p.value)[2,2]
+  confAC<-as.data.frame(Post_Hoc_KM$p.value)[2,1]
+  significance<-tibble(Indicator=c("A", "B", "C"),sign=c("s",NA,NA))
+  if(confAB< 0.05){
+    significance[2,2]<-"s"
+  }else{
+    significance[2,2]<-"ns"
+  }
+  if(confBC< 0.05){
+    significance[3,2]<-"s"
+  } else {
+    significance[3,2]<-"ns"
+  }
+  z<-summary(Model)
+  values<-tibble(Indicator= str_remove(z$strata, "Vitality_class="), time=z$time, coef=z$surv, se=z$std.err, ul=z$upper, ll=z$lower)%>%arrange(Indicator, desc(time))%>%distinct(Indicator,.keep_all=T)%>%dplyr::inner_join(., significance, by="Indicator")%>%dplyr::select(Indicator,sign, coef,se, ul, ll)
+  return(values)
+}
